@@ -2,4 +2,3 @@
 export const getAllProducts = async (req, res) => {}; // first function, which gets all products
 export const createProduct = async (req, res) => {};
 
-

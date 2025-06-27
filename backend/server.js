@@ -6,13 +6,14 @@ import cors from "cors";
 import dotenv from "dotenv";
 
 import productRoutes from "./routes/productRoutes.js" // import the productRoutes from the routes folder
+import { sql } from "./config/db.js"; // import the sql function from the db.js file in the config folder
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000; // comes form the .env file, a constant set to 3000. if undefined, backup with value 3000 
 
-console.log(PORT);
+// console.log(PORT);
 
 app.use(express.json()); // allows us to parse incoming data, e.g. extract image name and price 
 app.use(cors()); // no cors errors in client
@@ -21,8 +22,30 @@ app.use(morgan("dev")); // log the requests
 
 app.use("/api/products", productRoutes); // when we send a request to API/products, get requests
 
+async function initDB() { // function initialize the database
+    try { // create a table called products if it does not exist. Get sql function that we exported from /config/db.js, a tagged template literal that allows us to write SQL queries safely
+        // name is in lowercase, keywords in uppercase
+        // id is a serial primary key, which means it will auto-increment
+        // name, image, and price are all strings with a maximum length of 255 characters
+        // the table will be created if it does not exist
+        await sql`
+            CREATE TABLE IF NOT EXISTS products (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                image VARCHAR(255) NOT NULL,
+                price VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `;
 
+        console.log("Database initialized successfully");
+    } catch (error) { // catch any errors that occur during execution of SQL query
+        console.log("Error initDB", error);
+    }
+}
 
-app.listen(PORT, () => {
-    console.log("Server is running on port " + PORT); // set to PORT
+initDB().then(() => {
+    app.listen(PORT, () => {
+        console.log("Server is running on port", PORT);
+    });
 });
