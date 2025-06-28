@@ -24,6 +24,7 @@ export const aj = arcjet({
             ],
         }),
         // Create a token bucket rate limit. Other algorithms are supported
+        // sliding window, fixed window, and leaky bucket
         tokenBucket({
             mode: "LIVE",
             refillRate: 5, // Refill 5 tokens per interval
