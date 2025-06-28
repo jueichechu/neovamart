@@ -1,4 +1,5 @@
 import {sql} from "../config/db.js" // import the sql function
+// CRUD (create, read, update, delete) operations for products
 
 // asynchronous function because it will take some time to get data from database, and we can call await in it
 export const getProducts = async (req, res) => {
@@ -76,8 +77,25 @@ export const updateProduct = async (req, res) => {
         console.log("Error in updateProduct function", error);
         res.status(500).json({ success: false, message: "Internal Server Error" });
     }
-
 };
 
-export const deleteProduct = async (req, res) => {};
+export const deleteProduct = async (req, res) => {
+    const { id } = req.params; 
 
+    try {
+        const deletedProducts = await sql`
+            DELETE FROM products WHERE id = ${id} RETURNING *
+        `;
+
+        if (deletedProducts.length == 0) { // deleted product not found
+            return res.status(404).json({
+                success: false,
+                message: "Product not found",
+            })
+        }
+        res.status(200).json({ success: true, data: deletedProducts[0] }); // return the first element of the array, which is the deleted product
+    } catch (error) {
+        console.log("Error in deleteProduct function", error);
+        res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+};
