@@ -18,6 +18,39 @@ app.use(cors()); // no cors errors in client
 app.use(helmet()); // helmet is a security middleware that helps you protect your app by setting various HTTP headers
 app.use(morgan("dev")); // log the requests 
 
+// apply arcjet rate-limit to all routes
+// Add a middleware with parameters: request, response, and next (callback function to call when middleware is done) 
+app.use(async (req, res, next) => {
+    try {
+        const decision = await aj.project(req, {
+            requested:1 // specifies that each request consumes 1 token from the bucket
+        });
+
+        if (decision.isDenied()) {
+            if (decision.reason.isRateLimit()) {
+                res.status(429).json({ error: "Too Many Requests" });
+            } else if (decision.reason.isBot()) {
+                res.status(403).json({ error: "Bot Access Denied" });
+            } else {
+                res.status(403).json({ error: "Forbidden" });
+            }
+            return;
+        }
+        // check for spoofed bots, i.e. bots that try to bypass the bot detection by spoofing their user agent
+        if (decision.results.some((result) => result.isBot() && result.reason.isSpoofed())) {
+            res.status(403).json({ error: "Spoofed Bot Detected" });
+            return;
+        }
+
+        next(); // if call next() with no arguments, Express moves on to the next middleware/route handler
+    } catch (error) {
+        console.log("Arcjet error", error);
+        next(error); // if call next(error), Express will skip straight to error-handling middleware
+    }
+});
+
+
+
 app.use("/api/products", productRoutes); // when we send a request to API/products, get requests
 
 async function initDB() { // function initialize the database
