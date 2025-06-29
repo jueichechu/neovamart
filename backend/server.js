@@ -1,4 +1,3 @@
-// const express = require("express");
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -7,6 +6,7 @@ import dotenv from "dotenv";
 
 import productRoutes from "./routes/productRoutes.js" // import the productRoutes from the routes folder
 import { sql } from "./config/db.js"; // import the sql function from the db.js file in the config folder
+import { aj } from "./lib/arcjet.js";
 
 dotenv.config();
 
@@ -22,7 +22,7 @@ app.use(morgan("dev")); // log the requests
 // Add a middleware with parameters: request, response, and next (callback function to call when middleware is done) 
 app.use(async (req, res, next) => {
     try {
-        const decision = await aj.project(req, {
+        const decision = await aj.protect(req, {
             requested:1 // specifies that each request consumes 1 token from the bucket
         });
 
@@ -37,7 +37,7 @@ app.use(async (req, res, next) => {
             return;
         }
         // check for spoofed bots, i.e. bots that try to bypass the bot detection by spoofing their user agent
-        if (decision.results.some((result) => result.isBot() && result.reason.isSpoofed())) {
+        if (decision.results.some((result) => result.reason.isBot() && result.reason.isSpoofed())) {
             res.status(403).json({ error: "Spoofed Bot Detected" });
             return;
         }
