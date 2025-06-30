@@ -3,6 +3,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path"; // built in module from node
 
 import productRoutes from "./routes/productRoutes.js" // import the productRoutes from the routes folder
 import { sql } from "./config/db.js"; // import the sql function from the db.js file in the config folder
@@ -12,10 +13,15 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000; // comes form the .env file, a constant set to 3000. if undefined, backup with value 3000 
+const __dirname = path.resolve(); // keep track of directory we are in
 
 app.use(express.json()); // allows us to parse incoming data, e.g. extract image name and price 
 app.use(cors()); // no cors errors in client
-app.use(helmet()); // helmet is a security middleware that helps you protect your app by setting various HTTP headers
+app.use(
+    helmet({
+        contentSecurityPolicy: false,
+    })
+); // helmet is a security middleware that helps you protect your app by setting various HTTP headers
 app.use(morgan("dev")); // log the requests 
 
 // apply arcjet rate-limit to all routes
@@ -49,9 +55,16 @@ app.use(async (req, res, next) => {
     }
 });
 
-
-
 app.use("/api/products", productRoutes); // when we send a request to API/products, get requests
+
+if (process.env.NODE_ENV === "production") {
+    // server our react app, __dirname indicates we are in root directory. dist folder is production ready for react app
+    app.use(express.static(path.join(__dirname, "/frontend/dist")));
+
+    app.get("*", (req,res) => { // send file which is index.html in dist folder
+        res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html")); // path
+    });
+}
 
 async function initDB() { // function initialize the database
     try { // create a table called products if it does not exist. Get sql function that we exported from /config/db.js, a tagged template literal that allows us to write SQL queries safely
