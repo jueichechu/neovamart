@@ -6,4 +6,4 @@ neovamart is an online product store developed using PostgreSQL, Express, React,
 
 ## Deployment
 
-Step 1: 
+Step 1: Open a terminal and navigate to this project directory.
